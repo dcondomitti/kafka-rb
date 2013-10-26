@@ -31,6 +31,7 @@ module Kafka
       self.partition    = options[:partition] || 0
       self.host         = options[:host]      || HOST
       self.port         = options[:port]      || PORT
+      self.ssl          = options[:ssl]       || false
       self.offset       = options[:offset]
       self.max_size     = options[:max_size]  || MAX_SIZE
       self.polling      = options[:polling]   || DEFAULT_POLLING_INTERVAL

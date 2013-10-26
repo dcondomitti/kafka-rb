@@ -14,27 +14,33 @@
 # limitations under the License.
 module Kafka
   module IO
-    attr_accessor :socket, :host, :port, :compression
+    attr_accessor :host, :port, :compression, :ssl, :ssl_socket, :tcp_socket
 
     HOST = "localhost"
     PORT = 9092
 
-    def connect(host, port)
+    def connect(host, port, ssl = false)
       raise ArgumentError, "No host or port specified" unless host && port
       self.host = host
       self.port = port
-      self.socket = TCPSocket.new(host, port)
+      self.ssl = ssl
+      open_socket
+    end
+
+    def open_socket
+      self.tcp_socket = TCPSocket.new(host, port)
+      ssl! if ssl?
     end
 
     def reconnect
-      self.socket = TCPSocket.new(self.host, self.port)
+      open_socket
     rescue
       self.disconnect
       raise
     end
 
     def disconnect
-      self.socket.close rescue nil
+      self.tcp_socket.close rescue nil
       self.socket = nil
     end
 
@@ -53,5 +59,19 @@ module Kafka
       raise SocketError, "cannot write: #{$!.message}"
     end
 
+    def socket
+      return self.tcp_socket unless ssl?
+      self.ssl_socket
+    end
+
+    def ssl!
+      self.ssl_socket = OpenSSL::SSL::SSLSocket.new(self.tcp_socket)
+      self.ssl_socket.sync_close = true
+      self.ssl_socket.connect
+    end
+
+    def ssl?
+      !!self.ssl
+    end
   end
 end
